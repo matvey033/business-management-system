@@ -1,20 +1,14 @@
 from fastapi import FastAPI
-from fastapi_users import FastAPIUsers
 
-from src.models.user import User
-from src.auth.manager import get_user_manager
-from src.auth.auth import auth_backend
+from src.auth.auth import fastapi_users, auth_backend
 from src.schemas.user import UserRead, UserCreate
+
+from src.api.teams import router as teams_router
 
 app = FastAPI(
     title="Business Management System",
     description="Финальный проект EffectiveMobile",
     version="0.1.0",
-)
-
-fastapi_users = FastAPIUsers[User, int](
-    get_user_manager,
-    [auth_backend],
 )
 
 app.include_router(
@@ -28,6 +22,8 @@ app.include_router(
     prefix="/auth",
     tags=["Auth"],
 )
+
+app.include_router(teams_router)
 
 
 @app.get("/ping", tags=["Healthcheck"])
