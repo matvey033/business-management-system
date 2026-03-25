@@ -1,7 +1,7 @@
 import enum
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Enum, ForeignKey
 
 from src.database import Base
 
@@ -17,3 +17,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.user, nullable=False)
+
+    team_id: Mapped[int | None] = mapped_column(ForeignKey("team.id"), nullable=True)
+
+    team: Mapped["Team"] = relationship(back_populates="users")
