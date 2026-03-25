@@ -1,9 +1,13 @@
 import enum
+from typing import TYPE_CHECKING
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Enum, ForeignKey
 
 from src.database import Base
+
+if TYPE_CHECKING:
+    from src.models.team import Team
 
 
 class Role(str, enum.Enum):
