@@ -12,6 +12,7 @@ import os
 
 from src.core.config import settings
 from src.database import Base
+from src.models.user import User
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
