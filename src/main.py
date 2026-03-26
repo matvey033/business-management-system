@@ -4,6 +4,7 @@ from src.auth.auth import fastapi_users, auth_backend
 from src.schemas.user import UserRead, UserCreate
 
 from src.api.teams import router as teams_router
+from src.api.tasks import router as tasks_router
 
 app = FastAPI(
     title="Business Management System",
@@ -24,6 +25,7 @@ app.include_router(
 )
 
 app.include_router(teams_router)
+app.include_router(tasks_router)
 
 
 @app.get("/ping", tags=["Healthcheck"])
