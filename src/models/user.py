@@ -8,6 +8,7 @@ from src.database import Base
 
 if TYPE_CHECKING:
     from src.models.team import Team
+    from src.models.meeting import Meeting
 
 
 class Role(str, enum.Enum):
@@ -25,3 +26,4 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     team_id: Mapped[int | None] = mapped_column(ForeignKey("team.id"), nullable=True)
 
     team: Mapped["Team"] = relationship(back_populates="users")
+    meetings: Mapped[list["Meeting"]] = relationship()
