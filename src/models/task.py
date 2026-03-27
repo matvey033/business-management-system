@@ -9,6 +9,7 @@ from src.database import Base
 if TYPE_CHECKING:
     from src.models.team import Team
     from src.models.user import User
+    from src.models.evaluation import Evaluation
 
 
 class TaskStatus(str, enum.Enum):
@@ -38,3 +39,7 @@ class Task(Base):
     team: Mapped["Team"] = relationship(foreign_keys=[team_id])
     author: Mapped["User"] = relationship(foreign_keys=[author_id])
     assignee: Mapped["User"] = relationship(foreign_keys=[assignee_id])
+
+    evaluation: Mapped["Evaluation"] = relationship(
+        back_populates="task", uselist=False
+    )
