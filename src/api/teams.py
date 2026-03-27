@@ -7,16 +7,9 @@ from src.models.user import User, Role
 from src.models.team import Team
 from src.schemas.team import TeamCreate, TeamRead
 from src.auth.auth import current_active_user
+from src.api.dependencies import get_current_admin
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
-
-
-async def get_current_admin(user: User = Depends(current_active_user)):
-    if user.role != Role.admin:
-        raise HTTPException(
-            status_code=403, detail="Только администратор может выполнять это действие"
-        )
-    return user
 
 
 @router.post("/", response_model=TeamRead)

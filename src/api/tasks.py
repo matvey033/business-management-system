@@ -7,16 +7,9 @@ from src.models.user import User, Role
 from src.models.task import Task
 from src.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from src.auth.auth import current_active_user
+from src.api.dependencies import get_manager_user
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
-
-
-async def get_manager_user(user: User = Depends(current_active_user)):
-    if user.role not in [Role.manager, Role.admin]:
-        raise HTTPException(
-            status_code=403, detail="Только руководитель может управлять задачами"
-        )
-    return user
 
 
 @router.post("/", response_model=TaskRead)
