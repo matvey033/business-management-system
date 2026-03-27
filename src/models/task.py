@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from src.models.team import Team
     from src.models.user import User
     from src.models.evaluation import Evaluation
+    from src.models.comment import Comment
 
 
 class TaskStatus(str, enum.Enum):
@@ -42,4 +43,8 @@ class Task(Base):
 
     evaluation: Mapped["Evaluation"] = relationship(
         back_populates="task", uselist=False
+    )
+
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
     )

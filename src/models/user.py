@@ -9,6 +9,7 @@ from src.database import Base
 if TYPE_CHECKING:
     from src.models.team import Team
     from src.models.meeting import Meeting
+    from src.models.comment import Comment
 
 
 class Role(str, enum.Enum):
@@ -27,3 +28,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     team: Mapped["Team"] = relationship(back_populates="users")
     meetings: Mapped[list["Meeting"]] = relationship()
+
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )

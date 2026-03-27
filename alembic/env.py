@@ -19,6 +19,7 @@ from src.models.team import Team
 from src.models.task import Task
 from src.models.evaluation import Evaluation
 from src.models.meeting import Meeting
+from src.models.comment import Comment
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

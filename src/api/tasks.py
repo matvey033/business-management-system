@@ -8,6 +8,8 @@ from src.models.task import Task
 from src.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from src.auth.auth import current_active_user
 from src.api.dependencies import get_manager_user
+from src.models.comment import Comment
+from src.schemas.comment import CommentCreate, CommentRead
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -114,3 +116,38 @@ async def delete_task(
     await session.commit()
 
     return {"message": "Задача успешно удалена"}
+
+
+@router.post("/{task_id}/comments", response_model=CommentRead)
+async def add_comment(
+    task_id: int,
+    comment_data: CommentCreate,
+    user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = select(Task).where(Task.id == task_id)
+    task = (await session.execute(query)).scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+
+    new_comment = Comment(text=comment_data.text, task_id=task.id, user_id=user.id)
+    session.add(new_comment)
+    await session.commit()
+    await session.refresh(new_comment)
+
+    return new_comment
+
+
+@router.get("/{task_id}/comments", response_model=list[CommentRead])
+async def get_comments(
+    task_id: int,
+    user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = (
+        select(Comment).where(Comment.task_id == task_id).order_by(Comment.created_at)
+    )
+    result = await session.execute(query)
+
+    return result.scalars().all()
