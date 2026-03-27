@@ -8,6 +8,7 @@ from src.models.team import Team
 from src.schemas.team import TeamCreate, TeamRead
 from src.auth.auth import current_active_user
 from src.api.dependencies import get_current_admin
+from src.schemas.user import UserRead
 
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
@@ -45,3 +46,14 @@ async def join_team(
     await session.commit()
 
     return {"message": f"Вы успешно присоединились к команде: {team.name}"}
+
+
+@router.get("/{team_id}/users", response_model=list[UserRead])
+async def get_team_users(
+    team_id: int,
+    user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = select(User).where(User.team_id == team_id)
+    result = await session.execute(query)
+    return result.scalars().all()

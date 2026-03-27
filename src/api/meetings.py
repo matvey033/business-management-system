@@ -59,3 +59,27 @@ async def get_my_meetings(
     result = await session.execute(query)
 
     return result.scalars().all()
+
+
+@router.delete("/{meeting_id}")
+async def cancel_meeting(
+    meeting_id: int,
+    user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = select(Meeting).where(Meeting.id == meeting_id)
+    result = await session.execute(query)
+    meeting = result.scalar_one_or_none()
+
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Встреча не найдена")
+
+    if meeting.user_id != user.id:
+        raise HTTPException(
+            status_code=403, detail="Вы можете отменять только свои встречи"
+        )
+
+    await session.delete(meeting)
+    await session.commit()
+
+    return {"message": "Встреча успешно отменена"}

@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.auth.auth import fastapi_users, auth_backend
-from src.schemas.user import UserRead, UserCreate
+from src.schemas.user import UserRead, UserCreate, UserUpdate
 
 from src.api.teams import router as teams_router
 from src.api.tasks import router as tasks_router
@@ -32,6 +33,12 @@ app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["Auth"],
+)
+
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["Users"],
 )
 
 app.include_router(teams_router)
