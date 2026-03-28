@@ -22,3 +22,9 @@ class MeetingRead(BaseModel):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MeetingUpdate(BaseModel):
+    title: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None

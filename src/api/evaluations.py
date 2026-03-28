@@ -6,7 +6,7 @@ from src.database import get_async_session
 from src.models.user import User, Role
 from src.models.task import Task, TaskStatus
 from src.models.evaluation import Evaluation
-from src.schemas.evaluation import EvaluationCreate, EvaluationRead
+from src.schemas.evaluation import EvaluationCreate, EvaluationRead, EvaluationUpdate
 from src.auth.auth import current_active_user
 from src.api.dependencies import get_manager_user
 
@@ -74,3 +74,43 @@ async def get_my_average_score(
         return {"average_score": 0, "message": "У вас пока нет оценок"}
 
     return {"average_score": round(avg_score, 2)}
+
+
+@router.patch("/{eval_id}", response_model=EvaluationRead)
+async def update_evaluation(
+    eval_id: int,
+    eval_update: EvaluationUpdate,
+    user: User = Depends(get_manager_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = select(Evaluation).where(Evaluation.id == eval_id)
+    evaluation = (await session.execute(query)).scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Оценка не найдена")
+
+    update_data = eval_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(evaluation, key, value)
+
+    session.add(evaluation)
+    await session.commit()
+    await session.refresh(evaluation)
+    return evaluation
+
+
+@router.delete("/{eval_id}")
+async def delete_evaluation(
+    eval_id: int,
+    user: User = Depends(get_manager_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    query = select(Evaluation).where(Evaluation.id == eval_id)
+    evaluation = (await session.execute(query)).scalar_one_or_none()
+
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Оценка не найдена")
+
+    await session.delete(evaluation)
+    await session.commit()
+    return {"message": "Оценка удалена"}
