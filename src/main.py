@@ -8,6 +8,7 @@ from src.api.teams import router as teams_router
 from src.api.tasks import router as tasks_router
 from src.api.evaluations import router as evaluations_router
 from src.api.meetings import router as meetings_router
+from src.pages.router import router as pages_router
 
 app = FastAPI(
     title="Business Management System",
@@ -45,8 +46,4 @@ app.include_router(teams_router)
 app.include_router(tasks_router)
 app.include_router(evaluations_router)
 app.include_router(meetings_router)
-
-
-@app.get("/ping", tags=["Healthcheck"])
-async def ping():
-    return {"message": "pong!", "status": "success"}
+app.include_router(pages_router)

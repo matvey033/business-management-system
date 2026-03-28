@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бизнес Календарь (MVP)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+</head>
+<body class="bg-gray-50 text-gray-800 p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6 bg-white p-4 rounded shadow">
+            <h1 class="text-2xl font-bold text-indigo-600">Business MVP</h1>
+            <div id="auth-block" class="space-x-2">
+                <input type="email" id="email" placeholder="Email" class="border p-1 rounded text-sm">
+                <input type="password" id="password" placeholder="Пароль" class="border p-1 rounded text-sm">
+                <button onclick="login()" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Войти</button>
+            </div>
+        </header>
+
+        <div class="bg-white p-6 rounded shadow">
+            <div id='calendar'></div>
+        </div>
+    </div>
+
+    <script>
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ru',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridDay' 
+                },
+                events: [] 
+            });
+            calendar.render();
+            checkAuth();
+        });
+
+        async function login() {
+            const formData = new URLSearchParams();
+            formData.append("username", document.getElementById("email").value);
+            formData.append("password", document.getElementById("password").value);
+
+            const res = await fetch("/auth/jwt/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem("token", data.access_token);
+                checkAuth();
+            } else {
+                alert("Ошибка входа!");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.reload();
+        }
+
+        async function checkAuth() {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            // Меняем шапку, если авторизован
+            document.getElementById("auth-block").innerHTML = `
+                <span class="font-medium text-green-600">Вы вошли в систему</span>
+                <button onclick="logout()" class="ml-4 text-sm text-gray-500 underline">Выйти</button>
+            `;
+            
+            loadEvents(token);
+        }
+
+        async function loadEvents(token) {
+            const headers = { "Authorization": `Bearer ${token}` };
+            
+            const [tasksRes, meetingsRes] = await Promise.all([
+                fetch("/tasks/", { headers }),
+                fetch("/meetings/", { headers })
+            ]);
+
+            let eventsData = [];
+
+            if (tasksRes.ok) {
+                const tasks = await tasksRes.json();
+                tasks.forEach(t => {
+                    if (t.deadline) {
+                        eventsData.push({
+                            title: `📝 ${t.title} (${t.status})`,
+                            start: t.deadline,
+                            color: t.status === 'done' ? '#10B981' : '#F59E0B'
+                        });
+                    }
+                });
+            }
+
+            if (meetingsRes.ok) {
+                const meetings = await meetingsRes.json();
+                meetings.forEach(m => {
+                    eventsData.push({
+                        title: `🤝 ${m.title}`,
+                        start: m.start_time,
+                        end: m.end_time,
+                        color: '#3B82F6'
+                    });
+                });
+            }
+
+            calendar.removeAllEvents();
+            calendar.addEventSource(eventsData);
+        }
+    </script>
+</body>
+</html>
