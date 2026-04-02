@@ -26,7 +26,7 @@
 1. **Клонируйте репозиторий:**
 ``` Bash
    git clone https://github.com/matvey033/business-management-system.git
-   cd EffectiveMobile_FinProj
+   cd business-management-system
 ```
 2. Подготовьте файл окружения:
     Скопируйте шаблон и при необходимости отредактируйте значения:
