@@ -68,8 +68,3 @@
 - src/auth/ — Система аутентификации.
 - tests/ — Интеграционные тесты.
 - alembic/ — История миграций базы данных.
-
-### Твои финальные действия в терминале:
-1. `git add README.md`
-2. `git commit -m "docs: finalize project documentation with clean README"`
-3. `git push` (если у тебя настроен удаленный репозиторий).
