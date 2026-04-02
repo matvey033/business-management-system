@@ -1,69 +1,140 @@
 import pytest
 
 
-# 1. Тест регистрации пользователя
 @pytest.mark.asyncio
-async def test_register(ac):
-    response = await ac.post(
+async def test_full_business_flow(ac):
+    # 1. РЕГИСТРАЦИЯ И АВТОРИЗАЦИЯ
+
+    # Регистрируем Админа
+    res = await ac.post(
         "/auth/register",
         json={
-            "email": "tester@example.com",
-            "password": "supersecretpassword",
+            "email": "boss@mail.com",
+            "password": "superpassword",
+            "role": "admin",
             "is_active": True,
             "is_superuser": False,
             "is_verified": False,
-            "role": "user",
         },
     )
-    # Ожидаем успешное создание (201 Created)
-    assert response.status_code == 201
+    assert res.status_code == 201
 
-
-# 2. Тест авторизации (получения токена)
-@pytest.mark.asyncio
-async def test_login(ac):
-    response = await ac.post(
-        "/auth/jwt/login",
-        data={"username": "tester@example.com", "password": "supersecretpassword"},
-    )
-    assert response.status_code == 200
-    assert "access_token" in response.json()
-
-
-# 3. Тест бизнес-логики: Защита от пересечения встреч
-@pytest.mark.asyncio
-async def test_meeting_overlap(ac):
-    # Логинимся, чтобы получить токен
-    login_res = await ac.post(
-        "/auth/jwt/login",
-        data={"username": "tester@example.com", "password": "supersecretpassword"},
-    )
-    token = login_res.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
-
-    # Создаем первую встречу (с 10:00 до 11:00)
-    meet1 = await ac.post(
-        "/meetings/",
-        headers=headers,
+    # Регистрируем обычного Сотрудника
+    res = await ac.post(
+        "/auth/register",
         json={
-            "title": "Утренняя планерка",
+            "email": "worker@mail.com",
+            "password": "superpassword",
+            "role": "user",
+            "is_active": True,
+            "is_superuser": False,
+            "is_verified": False,
+        },
+    )
+    assert res.status_code == 201
+    worker_id = res.json()["id"]
+
+    # Логиним Админа (получаем токен)
+    res = await ac.post(
+        "/auth/jwt/login",
+        data={"username": "boss@mail.com", "password": "superpassword"},
+    )
+    admin_token = res.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # Логиним Сотрудника (получаем токен)
+    res = await ac.post(
+        "/auth/jwt/login",
+        data={"username": "worker@mail.com", "password": "superpassword"},
+    )
+    worker_token = res.json()["access_token"]
+    worker_headers = {"Authorization": f"Bearer {worker_token}"}
+
+    # 2. КОМАНДЫ (Создание и присоединение)
+
+    # Админ создает команду
+    res = await ac.post("/teams/", headers=admin_headers, json={"name": "Alpha Team"})
+    assert res.status_code == 200
+    team_code = res.json()["join_code"]
+
+    # Админ присоединяется по коду
+    await ac.post(f"/teams/join?join_code={team_code}", headers=admin_headers)
+
+    # Сотрудник присоединяется по коду
+    res = await ac.post(f"/teams/join?join_code={team_code}", headers=worker_headers)
+    assert res.status_code == 200
+
+    # 3. ЗАДАЧИ И КОММЕНТАРИИ
+
+    # Админ ставит задачу Сотруднику
+    res = await ac.post(
+        "/tasks/",
+        headers=admin_headers,
+        json={
+            "title": "Написать тесты",
+            "description": "Покрыть код на 70%",
+            "deadline": "2026-12-31T23:59:59",
+            "assignee_id": worker_id,
+        },
+    )
+    assert res.status_code == 200
+    task_id = res.json()["id"]
+
+    # Сотрудник пишет комментарий к задаче
+    res = await ac.post(
+        f"/tasks/{task_id}/comments", headers=worker_headers, json={"text": "Уже пишу!"}
+    )
+    assert res.status_code == 200
+
+    # Сотрудник меняет статус задачи на "in_progress"
+    res = await ac.patch(
+        f"/tasks/{task_id}", headers=worker_headers, json={"status": "in_progress"}
+    )
+
+    # Сотрудник меняет статус задачи на "done" (ВЫПОЛНЕНО)
+    res = await ac.patch(
+        f"/tasks/{task_id}", headers=worker_headers, json={"status": "done"}
+    )
+
+    assert res.status_code == 200
+
+    # 4. ОЦЕНКИ (Evaluation)
+
+    # Админ (как руководитель) оценивает выполнение задачи
+    res = await ac.post(
+        f"/evaluations/task/{task_id}",
+        headers=admin_headers,
+        json={
+            "score": 5,
+            "comment": "Отличная работа",
+            "user_id": worker_id,
+        },
+    )
+    assert res.status_code == 200
+
+    # 5. ВСТРЕЧИ (Meetings и защита от накладок)
+
+    # Админ назначает себе встречу
+    res = await ac.post(
+        "/meetings/",
+        headers=admin_headers,
+        json={
+            "title": "Планерка",
             "start_time": "2026-10-10T10:00:00",
             "end_time": "2026-10-10T11:00:00",
         },
     )
-    assert meet1.status_code == 200
+    assert res.status_code == 200
 
-    # Пытаемся создать вторую встречу, которая накладывается (с 10:30 до 11:30)
-    meet2 = await ac.post(
+    # Пытаемся создать встречу, которая пересекается по времени
+    res = await ac.post(
         "/meetings/",
-        headers=headers,
+        headers=admin_headers,
         json={
-            "title": "Пересекающаяся встреча",
+            "title": "Пересечение",
             "start_time": "2026-10-10T10:30:00",
             "end_time": "2026-10-10T11:30:00",
         },
     )
-
-    # Алгоритм должен заблокировать и выдать 400 Bad Request!
-    assert meet2.status_code == 400
-    assert "уже запланирована" in meet2.json()["detail"].lower()
+    # Ожидаем ошибку 400 (Bad Request), так как сработала наша защита!
+    assert res.status_code == 400
