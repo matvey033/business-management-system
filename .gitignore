@@ -216,5 +216,6 @@ __marimo__/
 .streamlit/secrets.toml
 
 #DB
+*.db
 sql_app.db
 test_app.db

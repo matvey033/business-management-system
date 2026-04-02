@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: business_mvp_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: superpassword
+      POSTGRES_DB: business_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  app:
+    build: .
+    container_name: business_mvp_app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      # Переопределяем URL базы данных для Докера
+      - DATABASE_URL=postgresql+asyncpg://admin:superpassword@db:5432/business_db
+    volumes:
+      - .:/app
+    restart: always
+
+volumes:
+  postgres_data:
