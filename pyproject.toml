@@ -12,7 +12,11 @@ dependencies = [
     "fastapi-users-db-sqlalchemy (>=7.0.0,<8.0.0)",
     "aiosqlite (>=0.22.1,<0.23.0)",
     "jinja2 (>=3.1.6,<4.0.0)",
-    "sqladmin (>=0.23.0,<0.24.0)"
+    "sqladmin (>=0.23.0,<0.24.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)"
 ]
 
 
