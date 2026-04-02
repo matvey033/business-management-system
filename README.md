@@ -29,18 +29,17 @@
    cd EffectiveMobile_FinProj
 ```
 2. Подготовьте файл окружения:
-    Создайте файл .env в корне проекта со следующим содержимым:
+    Скопируйте шаблон и при необходимости отредактируйте значения:
 
-Фрагмент кода
-``` Python
-    DATABASE_URL=postgresql+asyncpg://admin:superpassword@db:5432/business_db
-    SECRET_KEY=your_very_secret_key_here
+``` Bash
+    cp .env.example .env
+    cp .env.db.example .env.db
 ```
 
 3. Запустите систему:
 
 ``` Bash
-    docker-compose up --build
+    docker compose up --build
 ```
 
 После запуска приложение будет доступно по адресу: http://localhost:8000
