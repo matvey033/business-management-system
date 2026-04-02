@@ -13,12 +13,12 @@ class UserAdmin(ModelView, model=User):
     category = "👥 Персонал"
     icon = "fa-solid fa-user"
 
-    column_list = [User.id, User.email, User.role, User.team_id, User.is_active]
+    column_list = [User.id, User.email, User.role, User.team, User.is_active]
     column_labels = {
         User.id: "ID",
         User.email: "Электронная почта",
         User.role: "Роль",
-        User.team_id: "ID Команды",
+        User.team: "Команда",
         User.is_active: "Активен",
     }
 
@@ -49,7 +49,7 @@ class TaskAdmin(ModelView, model=Task):
         Task.status,
         Task.deadline,
         Task.team_id,
-        Task.assignee_id,
+        Task.assignee,
     ]
     column_labels = {
         Task.id: "ID",
@@ -57,7 +57,7 @@ class TaskAdmin(ModelView, model=Task):
         Task.status: "Статус",
         Task.deadline: "Дедлайн",
         Task.team_id: "Команда",
-        Task.assignee_id: "Исполнитель (ID)",
+        Task.assignee: "Исполнитель",
     }
 
 
@@ -72,14 +72,14 @@ class MeetingAdmin(ModelView, model=Meeting):
         Meeting.title,
         Meeting.start_time,
         Meeting.end_time,
-        Meeting.user_id,
+        Meeting.user,
     ]
     column_labels = {
         Meeting.id: "ID",
         Meeting.title: "Тема встречи",
         Meeting.start_time: "Начало",
         Meeting.end_time: "Конец",
-        Meeting.user_id: "Организатор (ID)",
+        Meeting.user: "Организатор",
     }
 
 
@@ -92,14 +92,14 @@ class EvaluationAdmin(ModelView, model=Evaluation):
     column_list = [
         Evaluation.id,
         Evaluation.score,
-        Evaluation.task_id,
-        Evaluation.user_id,
+        Evaluation.task,
+        Evaluation.user,
     ]
     column_labels = {
         Evaluation.id: "ID",
         Evaluation.score: "Балл (1-5)",
-        Evaluation.task_id: "Задача (ID)",
-        Evaluation.user_id: "Сотрудник (ID)",
+        Evaluation.task: "Задача",
+        Evaluation.user: "Сотрудник",
     }
 
 
@@ -113,13 +113,13 @@ class CommentAdmin(ModelView, model=Comment):
         Comment.id,
         Comment.text,
         Comment.created_at,
-        Comment.task_id,
-        Comment.user_id,
+        Comment.task,
+        Comment.user,
     ]
     column_labels = {
         Comment.id: "ID",
         Comment.text: "Текст",
         Comment.created_at: "Дата создания",
-        Comment.task_id: "Задача (ID)",
-        Comment.user_id: "Автор (ID)",
+        Comment.task: "Задача",
+        Comment.user: "Автор",
     }

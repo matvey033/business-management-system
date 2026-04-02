@@ -7,6 +7,7 @@ from src.database import Base
 
 if TYPE_CHECKING:
     from src.models.task import Task
+    from src.models.user import User
 
 
 class Evaluation(Base):
@@ -26,4 +27,5 @@ class Evaluation(Base):
         CheckConstraint("score >= 1 AND score <= 5", name="check_score_range"),
     )
 
-    task: Mapped["Task"] = relationship(back_populates="evaluation")
+    task: Mapped["Task"] = relationship("Task")
+    user: Mapped["User"] = relationship("User")

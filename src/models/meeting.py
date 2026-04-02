@@ -19,3 +19,7 @@ class Meeting(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="meetings")
+
+    def __str__(self):
+        return self.title

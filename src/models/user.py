@@ -32,3 +32,8 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+
+    team: Mapped["Team"] = relationship("Team")
+
+    def __str__(self):
+        return self.email

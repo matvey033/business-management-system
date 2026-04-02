@@ -26,3 +26,6 @@ class Team(Base):
     )
 
     users: Mapped[list["User"]] = relationship(back_populates="team")
+
+    def __str__(self):
+        return self.name

@@ -48,3 +48,9 @@ class Task(Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
+
+    team: Mapped["Team"] = relationship("Team")
+    assignee: Mapped["User"] = relationship("User", foreign_keys=[assignee_id])
+
+    def __str__(self):
+        return self.title

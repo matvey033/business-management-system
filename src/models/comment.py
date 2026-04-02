@@ -23,5 +23,8 @@ class Comment(Base):
     task_id: Mapped[int] = mapped_column(ForeignKey("task.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
-    task: Mapped["Task"] = relationship(back_populates="comments")
-    user: Mapped["User"] = relationship(back_populates="comments")
+    task: Mapped["Task"] = relationship("Task", back_populates="comments")
+    user: Mapped["User"] = relationship("User", back_populates="comments")
+
+    def __str__(self):
+        return self.text
