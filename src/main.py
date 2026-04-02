@@ -10,6 +10,17 @@ from src.api.evaluations import router as evaluations_router
 from src.api.meetings import router as meetings_router
 from src.pages.router import router as pages_router
 
+from sqladmin import Admin
+from src.database import engine
+from src.admin.views import (
+    UserAdmin,
+    TeamAdmin,
+    TaskAdmin,
+    MeetingAdmin,
+    EvaluationAdmin,
+    CommentAdmin,
+)
+
 app = FastAPI(
     title="Business Management System",
     description="Финальный проект EffectiveMobile",
@@ -47,3 +58,13 @@ app.include_router(tasks_router)
 app.include_router(evaluations_router)
 app.include_router(meetings_router)
 app.include_router(pages_router)
+
+
+admin = Admin(app, engine, title="Business Management Admin")
+
+admin.add_view(UserAdmin)
+admin.add_view(TeamAdmin)
+admin.add_view(TaskAdmin)
+admin.add_view(MeetingAdmin)
+admin.add_view(EvaluationAdmin)
+admin.add_view(CommentAdmin)
