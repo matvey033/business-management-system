@@ -25,7 +25,7 @@
 
 1. **Клонируйте репозиторий:**
 ``` Bash
-   git clone <url_вашего_репозитория>
+   git clone https://github.com/matvey033/business-management-system.git
    cd EffectiveMobile_FinProj
 ```
 2. Подготовьте файл окружения:
