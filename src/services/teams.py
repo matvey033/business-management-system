@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.team import Team
 from src.models.user import User, Role
 from src.schemas.team import TeamCreate
+from src.services.common import get_one_or_404
 
 
 class TeamsService:
@@ -26,12 +27,12 @@ class TeamsService:
         return new_team
 
     async def join_team(self, join_code: str, user: User) -> dict[str, str]:
-        team = (
-            await self.session.execute(select(Team).where(Team.join_code == join_code))
-        ).scalar_one_or_none()
-
-        if not team:
-            raise HTTPException(status_code=404, detail="Команда с таким кодом не найдена")
+        team = await get_one_or_404(
+            self.session,
+            Team,
+            Team.join_code == join_code,
+            detail="Команда с таким кодом не найдена",
+        )
 
         user.team_id = team.id
         self.session.add(user)
@@ -50,12 +51,9 @@ class TeamsService:
         return result.scalars().all()
 
     async def kick_user_from_team(self, team_id: int, user_id: int) -> dict[str, str]:
-        target_user = (
-            await self.session.execute(select(User).where(User.id == user_id))
-        ).scalar_one_or_none()
-
-        if not target_user:
-            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        target_user = await get_one_or_404(
+            self.session, User, User.id == user_id, detail="Пользователь не найден"
+        )
 
         if target_user.team_id != team_id:
             raise HTTPException(
@@ -77,14 +75,13 @@ class TeamsService:
     async def assign_user_role(
         self, team_id: int, user_id: int, role: Role
     ) -> dict[str, str]:
-        target_user = (
-            await self.session.execute(select(User).where(User.id == user_id))
-        ).scalar_one_or_none()
-
-        if not target_user or target_user.team_id != team_id:
-            raise HTTPException(
-                status_code=404, detail="Пользователь не найден в вашей команде"
-            )
+        target_user = await get_one_or_404(
+            self.session,
+            User,
+            User.id == user_id,
+            User.team_id == team_id,
+            detail="Пользователь не найден в вашей команде",
+        )
 
         target_user.role = role
         self.session.add(target_user)

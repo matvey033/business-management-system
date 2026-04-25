@@ -2,7 +2,7 @@ import enum
 from typing import TYPE_CHECKING
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Text, Enum, ForeignKey, DateTime
+from sqlalchemy import String, Text, Enum, ForeignKey, DateTime, CheckConstraint
 
 from src.database import Base
 
@@ -21,6 +21,12 @@ class TaskStatus(str, enum.Enum):
 
 class Task(Base):
     __tablename__ = "task"
+    __table_args__ = (
+        CheckConstraint(
+            "status <> 'done' OR assignee_id IS NOT NULL",
+            name="check_done_task_requires_assignee",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(150), nullable=False)

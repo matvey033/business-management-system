@@ -8,6 +8,7 @@ from src.models.task import Task
 from src.models.user import User
 from src.schemas.comment import CommentCreate
 from src.schemas.task import TaskCreate, TaskUpdate
+from src.services.common import get_one_or_404
 
 
 class TasksService:
@@ -46,12 +47,9 @@ class TasksService:
         return result.scalars().all()
 
     async def update_task(self, task_id: int, task_update: TaskUpdate, user: User) -> Task:
-        task = (
-            await self.session.execute(select(Task).where(Task.id == task_id))
-        ).scalar_one_or_none()
-
-        if not task:
-            raise HTTPException(status_code=404, detail="Задача не найдена")
+        task = await get_one_or_404(
+            self.session, Task, Task.id == task_id, detail="Задача не найдена"
+        )
 
         if task.author_id != user.id and task.assignee_id != user.id:
             raise HTTPException(
@@ -80,12 +78,9 @@ class TasksService:
         return task
 
     async def delete_task(self, task_id: int, user: User) -> dict[str, str]:
-        task = (
-            await self.session.execute(select(Task).where(Task.id == task_id))
-        ).scalar_one_or_none()
-
-        if not task:
-            raise HTTPException(status_code=404, detail="Задача не найдена")
+        task = await get_one_or_404(
+            self.session, Task, Task.id == task_id, detail="Задача не найдена"
+        )
         if task.author_id != user.id:
             raise HTTPException(
                 status_code=403, detail="Только автор может удалить эту задачу"
@@ -102,11 +97,9 @@ class TasksService:
     async def add_comment(
         self, task_id: int, comment_data: CommentCreate, user: User
     ) -> Comment:
-        task = (
-            await self.session.execute(select(Task).where(Task.id == task_id))
-        ).scalar_one_or_none()
-        if not task:
-            raise HTTPException(status_code=404, detail="Задача не найдена")
+        task = await get_one_or_404(
+            self.session, Task, Task.id == task_id, detail="Задача не найдена"
+        )
 
         new_comment = Comment(text=comment_data.text, task_id=task.id, user_id=user.id)
         self.session.add(new_comment)

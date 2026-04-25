@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.meeting import Meeting
 from src.models.user import User
 from src.schemas.meeting import MeetingCreate, MeetingUpdate
+from src.services.common import get_one_or_404
 
 
 class MeetingsService:
@@ -16,11 +17,13 @@ class MeetingsService:
         overlap_query = select(Meeting).where(
             and_(
                 Meeting.user_id == user.id,
-                Meeting.start_time < meeting_data.end_time,
-                Meeting.end_time > meeting_data.start_time,
+                Meeting.start_time < meeting_data.end_time.replace(tzinfo=None),
+                Meeting.end_time > meeting_data.start_time.replace(tzinfo=None),
             )
         )
-        overlapping_meeting = (await self.session.execute(overlap_query)).scalars().first()
+        overlapping_meeting = (
+            (await self.session.execute(overlap_query)).scalars().first()
+        )
         if overlapping_meeting:
             raise HTTPException(
                 status_code=400,
@@ -29,8 +32,8 @@ class MeetingsService:
 
         new_meeting = Meeting(
             title=meeting_data.title,
-            start_time=meeting_data.start_time,
-            end_time=meeting_data.end_time,
+            start_time=meeting_data.start_time.replace(tzinfo=None),
+            end_time=meeting_data.end_time.replace(tzinfo=None),
             user_id=user.id,
         )
 
@@ -40,21 +43,23 @@ class MeetingsService:
             await self.session.refresh(new_meeting)
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при создании встречи") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при создании встречи"
+            ) from None
         return new_meeting
 
     async def get_my_meetings(self, user: User) -> list[Meeting]:
         result = await self.session.execute(
-            select(Meeting).where(Meeting.user_id == user.id).order_by(Meeting.start_time)
+            select(Meeting)
+            .where(Meeting.user_id == user.id)
+            .order_by(Meeting.start_time)
         )
         return result.scalars().all()
 
     async def cancel_meeting(self, meeting_id: int, user: User) -> dict[str, str]:
-        meeting = (
-            await self.session.execute(select(Meeting).where(Meeting.id == meeting_id))
-        ).scalar_one_or_none()
-        if not meeting:
-            raise HTTPException(status_code=404, detail="Встреча не найдена")
+        meeting = await get_one_or_404(
+            self.session, Meeting, Meeting.id == meeting_id, detail="Встреча не найдена"
+        )
         if meeting.user_id != user.id:
             raise HTTPException(
                 status_code=403, detail="Вы можете отменять только свои встречи"
@@ -65,19 +70,29 @@ class MeetingsService:
             await self.session.commit()
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при отмене встречи") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при отмене встречи"
+            ) from None
         return {"message": "Встреча успешно отменена"}
 
     async def update_meeting(
         self, meeting_id: int, meeting_update: MeetingUpdate, user: User
     ) -> Meeting:
-        meeting = (
-            await self.session.execute(select(Meeting).where(Meeting.id == meeting_id))
-        ).scalar_one_or_none()
-        if not meeting or meeting.user_id != user.id:
-            raise HTTPException(status_code=404, detail="Встреча не найдена или нет прав")
+        meeting = await get_one_or_404(
+            self.session,
+            Meeting,
+            Meeting.id == meeting_id,
+            Meeting.user_id == user.id,
+            detail="Встреча не найдена или нет прав",
+        )
 
         update_data = meeting_update.model_dump(exclude_unset=True)
+
+        if "start_time" in update_data and update_data["start_time"]:
+            update_data["start_time"] = update_data["start_time"].replace(tzinfo=None)
+        if "end_time" in update_data and update_data["end_time"]:
+            update_data["end_time"] = update_data["end_time"].replace(tzinfo=None)
+
         new_start = update_data.get("start_time", meeting.start_time)
         new_end = update_data.get("end_time", meeting.end_time)
         if new_start >= new_end:
@@ -108,5 +123,7 @@ class MeetingsService:
             await self.session.refresh(meeting)
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при обновлении встречи") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при обновлении встречи"
+            ) from None
         return meeting

@@ -7,6 +7,7 @@ from src.models.evaluation import Evaluation
 from src.models.task import Task, TaskStatus
 from src.models.user import User
 from src.schemas.evaluation import EvaluationCreate, EvaluationUpdate
+from src.services.common import get_one_or_404, get_one_or_none
 
 
 class EvaluationsService:
@@ -16,28 +17,23 @@ class EvaluationsService:
     async def evaluate_task(
         self, task_id: int, eval_data: EvaluationCreate, user: User
     ) -> Evaluation:
-        task = (
-            await self.session.execute(select(Task).where(Task.id == task_id))
-        ).scalar_one_or_none()
+        task = await get_one_or_none(
+            self.session,
+            Task,
+            Task.id == task_id,
+            Task.team_id == user.team_id,
+            Task.status == TaskStatus.done,
+            Task.assignee_id.is_not(None),
+        )
         if not task:
-            raise HTTPException(status_code=404, detail="Задача не найдена")
-        if task.status != TaskStatus.done:
             raise HTTPException(
-                status_code=400,
-                detail="Можно оценить только завершенную задачу (статус 'done')",
-            )
-        if task.team_id != user.team_id:
-            raise HTTPException(
-                status_code=403, detail="Нельзя оценивать задачи чужой команды"
-            )
-        if not task.assignee_id:
-            raise HTTPException(
-                status_code=400, detail="У задачи нет исполнителя для оценки"
+                status_code=404,
+                detail="Задача не найдена или недоступна для оценки",
             )
 
-        existing_eval = (
-            await self.session.execute(select(Evaluation).where(Evaluation.task_id == task_id))
-        ).scalar_one_or_none()
+        existing_eval = await get_one_or_none(
+            self.session, Evaluation, Evaluation.task_id == task_id
+        )
         if existing_eval:
             raise HTTPException(status_code=400, detail="Эта задача уже оценена")
 
@@ -53,7 +49,9 @@ class EvaluationsService:
             await self.session.refresh(new_eval)
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при создании оценки") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при создании оценки"
+            ) from None
         return new_eval
 
     async def get_my_average_score(self, user: User) -> dict[str, float | int | str]:
@@ -63,17 +61,18 @@ class EvaluationsService:
             )
         ).scalar()
         if avg_score is None:
-            return {"average_score": 0, "message": "У вас пока нет оценок"}
+            return {"average_score": 0}
         return {"average_score": round(avg_score, 2)}
 
     async def update_evaluation(
         self, eval_id: int, eval_update: EvaluationUpdate
     ) -> Evaluation:
-        evaluation = (
-            await self.session.execute(select(Evaluation).where(Evaluation.id == eval_id))
-        ).scalar_one_or_none()
-        if not evaluation:
-            raise HTTPException(status_code=404, detail="Оценка не найдена")
+        evaluation = await get_one_or_404(
+            self.session,
+            Evaluation,
+            Evaluation.id == eval_id,
+            detail="Оценка не найдена",
+        )
 
         update_data = eval_update.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -85,20 +84,25 @@ class EvaluationsService:
             await self.session.refresh(evaluation)
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при обновлении оценки") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при обновлении оценки"
+            ) from None
         return evaluation
 
     async def delete_evaluation(self, eval_id: int) -> dict[str, str]:
-        evaluation = (
-            await self.session.execute(select(Evaluation).where(Evaluation.id == eval_id))
-        ).scalar_one_or_none()
-        if not evaluation:
-            raise HTTPException(status_code=404, detail="Оценка не найдена")
+        evaluation = await get_one_or_404(
+            self.session,
+            Evaluation,
+            Evaluation.id == eval_id,
+            detail="Оценка не найдена",
+        )
 
         try:
             await self.session.delete(evaluation)
             await self.session.commit()
         except SQLAlchemyError:
             await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Ошибка при удалении оценки") from None
+            raise HTTPException(
+                status_code=500, detail="Ошибка при удалении оценки"
+            ) from None
         return {"message": "Оценка удалена"}
